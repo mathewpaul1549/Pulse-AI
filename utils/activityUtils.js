@@ -1,6 +1,34 @@
 import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { ref, set, push, onValue, off } from 'firebase/database';
 import { db, rtdb, isDev } from '../firebase';
+import { format } from 'date-fns';
+
+const mockActivities = [
+  {
+    id: 'act1',
+    userId: 'user1',
+    username: 'alice',
+    type: 'updated_profile',
+    description: 'updated their profile picture',
+    timestamp: new Date(Date.now() - 3600000).toISOString(),
+  },
+  {
+    id: 'act2',
+    userId: 'user2',
+    username: 'bob',
+    type: 'joined',
+    description: 'joined MentaCrush',
+    timestamp: new Date(Date.now() - 7200000).toISOString(),
+  },
+  {
+    id: 'act3',
+    userId: 'user3',
+    username: 'charlie',
+    type: 'updated_profile',
+    description: 'updated their bio',
+    timestamp: new Date(Date.now() - 10800000).toISOString(),
+  },
+];
 
 export const ACTIVITY_TYPES = {
   JOINED: 'joined',
@@ -14,7 +42,7 @@ export const ACTIVITY_TYPES = {
 export const createActivity = async (userId, username, type, description) => {
   if (isDev) {
     console.log('Development mode: Mocking createActivity', { userId, username, type, description });
-    return { id: `mock-activity-${Date.now()}` };
+    return { id: `mock-activity-${Date.now()}`, timestamp: new Date().toISOString() };
   }
   
   try {
@@ -37,9 +65,9 @@ export const createActivity = async (userId, username, type, description) => {
 export const formatActivityTime = (timestamp) => {
   if (!timestamp) return '';
   
-  const date = timestamp instanceof Date 
-    ? timestamp 
-    : new Date(timestamp);
+  const date = typeof timestamp === 'string' 
+    ? new Date(timestamp) 
+    : timestamp.toDate ? timestamp.toDate() : timestamp instanceof Date ? timestamp : new Date(timestamp);
   
   const now = new Date();
   const diffMs = now - date;
@@ -57,7 +85,7 @@ export const formatActivityTime = (timestamp) => {
   } else if (diffDay < 7) {
     return `${diffDay}d ago`;
   } else {
-    return date.toLocaleDateString();
+    return format(date, 'MMM d');
   }
 };
 
