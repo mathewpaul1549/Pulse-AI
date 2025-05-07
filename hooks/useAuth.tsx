@@ -41,6 +41,7 @@ interface AuthContextType {
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, username: string) => Promise<void>;
   updateUserData: (userData: Partial<User>) => void;
+  incrementHintCount: (type: 'sent' | 'received') => void;
   logout: () => Promise<void>;
 }
 
@@ -293,6 +294,23 @@ export function AuthProvider({ children }) {
   const updateUserData = (userData: Partial<User>) => {
     if (user) {
       setUser({ ...user, ...userData });
+      
+      if (!isDev && userData) {
+        try {
+          const userDocRef = doc(db as any, 'users', user.uid);
+          updateDoc(userDocRef, userData);
+        } catch (error) {
+          console.error('Error updating user data:', error);
+        }
+      }
+    }
+  };
+  
+  const incrementHintCount = (type: 'sent' | 'received') => {
+    if (user) {
+      const field = type === 'sent' ? 'hintsSent' : 'hintsReceived';
+      const currentValue = user[field] || 0;
+      updateUserData({ [field]: currentValue + 1 });
     }
   };
   
@@ -319,6 +337,7 @@ export function AuthProvider({ children }) {
       signInWithEmail,
       signUpWithEmail,
       updateUserData,
+      incrementHintCount,
       logout 
     }}>
       {children}
