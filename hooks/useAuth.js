@@ -65,7 +65,9 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null);
   
   const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: 'YOUR_WEB_CLIENT_ID',
+    clientId: '737673462489-vj8qm1lv7q9c9g5j7nrqjvtk3f7o4hs1.apps.googleusercontent.com',
+    androidClientId: '737673462489-vj8qm1lv7q9c9g5j7nrqjvtk3f7o4hs1.apps.googleusercontent.com',
+    iosClientId: '737673462489-vj8qm1lv7q9c9g5j7nrqjvtk3f7o4hs1.apps.googleusercontent.com',
   });
   
   useEffect(() => {
@@ -88,6 +90,7 @@ export function AuthProvider({ children }) {
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
           try {
+            console.log('Firebase user authenticated:', firebaseUser.uid);
             const userDocRef = doc(db, 'users', firebaseUser.uid);
             const userDoc = await getDoc(userDocRef);
             
@@ -96,7 +99,7 @@ export function AuthProvider({ children }) {
               email: firebaseUser.email,
               username: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || `user_${firebaseUser.uid.substring(0, 5)}`,
               isAnonymous: firebaseUser.isAnonymous,
-              photoURL: null,
+              photoURL: firebaseUser.photoURL || null,
               bio: '',
               socialLinks: {},
               hintsReceived: 0,
@@ -104,14 +107,17 @@ export function AuthProvider({ children }) {
             };
             
             if (!userDoc.exists()) {
+              console.log('Creating new user document in Firestore');
               await setDoc(userDocRef, userData);
             } else {
+              console.log('User document exists in Firestore');
               userData = { ...userData, ...userDoc.data() };
             }
             
             setUser(userData);
           } catch (error) {
             console.error('Error fetching user data:', error);
+            setError('Failed to fetch user data. Please try again.');
           }
         } else {
           setUser(null);
@@ -124,19 +130,27 @@ export function AuthProvider({ children }) {
   }, []);
   
   const signInWithGoogle = async () => {
+    setError(null);
+    setLoading(true);
     if (isDev) {
       console.log('Mock Google Sign-In');
       setUser(mockUser);
+      setLoading(false);
     } else {
       try {
+        console.log('Attempting Google Sign-In');
         await promptAsync();
       } catch (error) {
         console.error('Google Sign-In Error:', error);
+        setError('Failed to sign in with Google. Please try again.');
+        setLoading(false);
       }
     }
   };
   
   const signInAnonymousUser = async () => {
+    setError(null);
+    setLoading(true);
     if (isDev) {
       console.log('Mock Anonymous Sign-In');
       const anonymousUser = {
@@ -149,10 +163,13 @@ export function AuthProvider({ children }) {
         hintsSent: 0,
       };
       setUser(anonymousUser);
+      setLoading(false);
     } else {
       try {
+        console.log('Attempting Anonymous Sign-In');
         const result = await signInAnonymously(auth);
         const user = result.user;
+        console.log('Anonymous user created:', user.uid);
         
         const userDocRef = doc(db, 'users', user.uid);
         await setDoc(userDocRef, {
@@ -164,8 +181,11 @@ export function AuthProvider({ children }) {
           hintsReceived: 0,
           hintsSent: 0,
         });
+        console.log('Anonymous user document created in Firestore');
       } catch (error) {
         console.error('Anonymous Sign-In Error:', error);
+        setError('Failed to sign in anonymously. Please try again.');
+        setLoading(false);
       }
     }
   };
@@ -197,9 +217,10 @@ export function AuthProvider({ children }) {
       }
     } else {
       try {
+        console.log('Attempting Email Sign-In:', email);
         setLoading(true);
         await signInWithEmailAndPassword(auth, email, password);
-        setLoading(false);
+        console.log('Email sign-in successful');
       } catch (error) {
         console.error('Email Sign-In Error:', error);
         setError(error.message || 'Failed to sign in');
@@ -241,9 +262,11 @@ export function AuthProvider({ children }) {
       }
     } else {
       try {
+        console.log('Attempting Email Sign-Up:', email);
         setLoading(true);
         const result = await createUserWithEmailAndPassword(auth, email, password);
         const user = result.user;
+        console.log('User created successfully:', user.uid);
         
         const userData = {
           uid: user.uid,
@@ -257,7 +280,7 @@ export function AuthProvider({ children }) {
         
         const userDocRef = doc(db, 'users', user.uid);
         await setDoc(userDocRef, userData);
-        setLoading(false);
+        console.log('User document created in Firestore');
       } catch (error) {
         console.error('Email Sign-Up Error:', error);
         setError(error.message || 'Failed to sign up');
@@ -290,14 +313,18 @@ export function AuthProvider({ children }) {
   };
   
   const logout = async () => {
+    setError(null);
     if (isDev) {
       console.log('Mock Logout');
       setUser(null);
     } else {
       try {
+        console.log('Attempting to sign out');
         await signOut(auth);
+        console.log('User signed out successfully');
       } catch (error) {
         console.error('Logout Error:', error);
+        setError('Failed to sign out. Please try again.');
       }
     }
   };
