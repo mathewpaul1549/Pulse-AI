@@ -3,7 +3,7 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getDatabase } from 'firebase/database';
-import { isSupported, getAnalytics } from 'firebase/analytics';
+// Analytics import completely removed to prevent React Native crash
 
 const firebaseConfig = {
   apiKey: "AIzaSyCqsCUma9iMboUdHnL8Jrtph1sR2O0Mrjk",
@@ -22,18 +22,9 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 const rtdb = getDatabase(app);
 
-// Initialize Analytics only if supported in this environment
-let analytics = null;
-isSupported().then(supported => {
-  if (supported) {
-    analytics = getAnalytics(app);
-    console.log('Firebase Analytics initialized successfully');
-  } else {
-    console.log('Firebase Analytics is not supported in this environment');
-  }
-}).catch(error => {
-  console.error('Error checking Analytics support:', error);
-});
+// Analytics initialization completely removed to prevent React Native crash
+// Mock analytics object to maintain API compatibility
+const analytics = null;
 
 const isDev = false; // Set to false for production mode
 
