@@ -3,7 +3,7 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getDatabase } from 'firebase/database';
-import { getAnalytics } from 'firebase/analytics';
+import { isSupported, getAnalytics } from 'firebase/analytics';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCqsCUma9iMboUdHnL8Jrtph1sR2O0Mrjk",
@@ -21,7 +21,19 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 const rtdb = getDatabase(app);
-const analytics = getAnalytics(app);
+
+// Initialize Analytics only if supported in this environment
+let analytics = null;
+isSupported().then(supported => {
+  if (supported) {
+    analytics = getAnalytics(app);
+    console.log('Firebase Analytics initialized successfully');
+  } else {
+    console.log('Firebase Analytics is not supported in this environment');
+  }
+}).catch(error => {
+  console.error('Error checking Analytics support:', error);
+});
 
 const isDev = false; // Set to false for production mode
 
